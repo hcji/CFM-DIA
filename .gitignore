@@ -1,0 +1,11 @@
+*.pyc
+/.spyproject
+/output
+/Figure
+/__pycache__
+*.npy
+*.csv
+*.msp
+*.xml
+*.json
+*.txt
