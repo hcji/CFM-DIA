@@ -15,22 +15,23 @@ from PyCFMID.PyCFMID import cfm_predict
 from DIA.utils import load_data, get_precursor_eic, get_fragment_eic, get_peaks, get_decoy_spectrum
 
 def one_sample_one_compound(data, precursor_mz, spectrum, mztol=0.1, peak_threshold=1000):
-    precursor_eic = get_precursor_eic(data, precursor_mz, 0, mztol = 0.1, width = 10**6)
+    precursor_eic = get_precursor_eic(data, precursor_mz, 0, mztol = 0.1, width = float('inf'))
     precursor_peaks, peaks_information = get_peaks(precursor_eic, peak_threshold=peak_threshold)
-
+    
     fragment_mzs = spectrum['mz']
+    precursor_rt, precursor_eic = precursor_eic[0], precursor_eic[1]
+    fragment_rt, fragment_eics = get_fragment_eic(data, precursor_mz, fragment_mzs, 0, mztol = 0.1, width = float('inf'))
+
     output = dict()
     for i, rt in enumerate(precursor_peaks):
         width = (peaks_information[1][i] - peaks_information[0][i])
-        precursor_rt, precursor_eic = get_precursor_eic(data, precursor_mz, rt, mztol = mztol, width = width)
-        fragment_rt, fragment_eics = get_fragment_eic(data, precursor_mz, fragment_mzs, rt, mztol = 0.1, width = width + 5)
-        standard_rt = np.linspace(precursor_rt[0], precursor_rt[-1], 100)
-        precursor_eic = np.interp(standard_rt, precursor_rt, precursor_eic)
-        precursor_intensity = precursor_eic[int(len(precursor_eic) / 2)]
+        standard_rt = np.linspace(rt - 0.5 * width, rt + 0.5 * width, 100)
+        precursor_eic1 = np.interp(standard_rt, precursor_rt, precursor_eic)
+        precursor_intensity = precursor_eic1[int(len(precursor_eic1) / 2)]
         fragment_intensity, fragment_correlation = [], []
         for fragment_eic in fragment_eics:
             fragment_eic = np.interp(standard_rt, fragment_rt, fragment_eic)
-            fragment_corr = pearsonr(precursor_eic, fragment_eic)[0]
+            fragment_corr = pearsonr(precursor_eic1, fragment_eic)[0]
             fragment_intensity.append(fragment_eic[int(len(fragment_eic) / 2)])
             fragment_correlation.append(fragment_corr)
         qv = np.array(fragment_intensity)
@@ -89,23 +90,27 @@ def process_dataset(file_dir, file_met, file_spectra = None, energy = None, mzto
     return results, spectra
         
 
-def grouping_results(results, rt_tol = 5):
+def grouping_results(results, rt_tol = 5, n_candidate = 5):
     samples = list(results.keys())
     columns = ['Sample', 'Metabolite','RT', 'Precursor_intensity', 'Fragment_mz', 'Fragment_intensity', 'Score']
-    quant_table = pd.DataFrame(columns = columns)
-    for s in samples:
+    quant_table = []
+    for s in tqdm(samples):
         r = results[s]
         met = list(r.keys())
         for m in met:
             ls = r[m]
-            rts = list(ls.keys())
-            for rt in rts:
+            rts = np.array(list(ls.keys()))
+            scores = np.array([ls[k]['total_score'] for k in ls.keys()])
+            topn = np.argsort(-scores)[range(min(len(scores), n_candidate))]
+            for rt in rts[topn]:
                 sc = ls[rt]['total_score']
                 pi = ls[rt]['precursor_intensity']
                 for i in range(len(ls[rt]['ms2'])):
                     mz = ls[rt]['ms2'][i,0]
                     intensity = ls[rt]['ms2'][i,1]
-                    quant_table.loc[len(quant_table)] = [s, m, rt, pi, mz, intensity, sc]
+                    quant_table.append([s, m, rt, pi, mz, intensity, sc])
+    quant_table = pd.DataFrame(quant_table)
+    quant_table.columns = columns
     
     group = 0
     n_group_table = []
