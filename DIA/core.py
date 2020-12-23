@@ -21,19 +21,35 @@ def one_sample_one_compound(data, precursor_mz, spectrum, mztol=0.1, peak_thresh
     fragment_mzs = spectrum['mz']
     precursor_rt, precursor_eic = precursor_eic[0], precursor_eic[1]
     fragment_rt, fragment_eics = get_fragment_eic(data, precursor_mz, fragment_mzs, 0, mztol = 0.1, width = float('inf'))
-
+    
     output = dict()
     for i, rt in enumerate(precursor_peaks):
-        width = (peaks_information[1][i] - peaks_information[0][i])
+        width = max((peaks_information[1][i] - peaks_information[0][i]), 5)
         standard_rt = np.linspace(rt - 0.5 * width, rt + 0.5 * width, 100)
         precursor_eic1 = np.interp(standard_rt, precursor_rt, precursor_eic)
+        '''
+        fig = plt.figure(dpi = 300)
+        ax1 = fig.add_subplot(111)
+        ax2 = ax1.twinx()
+        ax1.plot(standard_rt, precursor_eic1, color = 'red', label = 'precursor')
+        '''
         precursor_intensity = precursor_eic1[int(len(precursor_eic1) / 2)]
         fragment_intensity, fragment_correlation = [], []
-        for fragment_eic in fragment_eics:
+        for j, fragment_eic in enumerate(fragment_eics):
             fragment_eic = np.interp(standard_rt, fragment_rt, fragment_eic)
             fragment_corr = pearsonr(precursor_eic1, fragment_eic)[0]
+            # ax2.plot(standard_rt, fragment_eic, label = 'frag_{}'.format(round(fragment_mzs[j], 2)))
             fragment_intensity.append(fragment_eic[int(len(fragment_eic) / 2)])
             fragment_correlation.append(fragment_corr)
+        '''
+        ax1.set_ylabel('precursor intensity')
+        ax2.set_ylim(0, 700000)
+        ax2.set_ylabel('fragment intensity')
+        ax1.set_xlabel('retention time')
+        ax1.legend(loc = 'upper left')
+        ax2.legend()
+        plt.show()
+        '''
         qv = np.array(fragment_intensity)
         wt = np.array(fragment_correlation)
         rv = np.array(spectrum)[:,1]
