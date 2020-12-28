@@ -9,6 +9,7 @@ import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib_venn import venn2
 from tqdm import tqdm
 from scipy import stats
 from rdkit import Chem
@@ -53,9 +54,10 @@ plt.figure(dpi = 300)
 plt.hist(true_scores, bins = 50, color='coral', alpha=0.7, label = 'urine')
 plt.hist(decoy_scores, bins = 50, color='navy', alpha=0.7, label = 'decoy')
 plt.plot([0.718, 0.718], [0, 200], color='red', label='p-val = 0.05')
-plt.xlabel('p-values')
+plt.xlabel('MCI scores')
 plt.ylabel('peak groups')
 plt.legend()
+plt.show()
 
 quant_mat = quant_table[0]
 sel1 = np.where(pvals < 0.05)[0]
@@ -87,15 +89,16 @@ plt.ylabel('peak groups')
 plt.legend()
 plt.show()
 
+
 corr_metab = pd.read_csv('Data/CorrDec.csv')
 metab = pd.read_csv('HMDB/all_metabolites.csv')
 metab_name = [i.split('_')[0] for i in quant_list.keys()]
+
 metab_name = np.unique(metab_name)
 common = []
 for n in metab_name:
     s = np.where(metab['Metabolite'] == n)[0][0]
     smi = metab['SMILES'][s]
-    
     if n in list(corr_metab['name']):
         common += [smi]
 
