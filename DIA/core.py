@@ -9,6 +9,8 @@ import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import multiprocessing
+from joblib import Parallel, delayed
 from scipy.stats import pearsonr
 from tqdm import tqdm
 from PyCFMID.PyCFMID import cfm_predict
@@ -60,7 +62,7 @@ def one_sample_one_compound(data, precursor_mz, spectrum, mztol=0.1, peak_thresh
     return output
 
 
-def process_dataset(file_dir, file_met, file_spectra = None, energy = None, mztol=0.1, peak_threshold=1000, use_decoy=False):
+def process_dataset(file_dir, file_met, file_spectra = None, energy = None, mztol=0.1, peak_threshold=1000, parallel=False, use_decoy=False):
     files = os.listdir(file_dir)
     metab = pd.read_csv(file_met)
     if energy == None:
@@ -84,12 +86,10 @@ def process_dataset(file_dir, file_met, file_spectra = None, energy = None, mzto
             spectra[metab['Metabolite'][i]] = spectrum
     else:
         spectra = np.load(file_spectra, allow_pickle=True).item()
+
     
-    print('processing dataset \n')
-    results = dict()
-    for f in files:
+    def process_one_file(f):
         f = file_dir + '/' + f
-        print('processing ' + f)
         data = load_data(f, energy)
         result_i = dict()
         for i in tqdm(range(len(metab))):
@@ -102,11 +102,37 @@ def process_dataset(file_dir, file_met, file_spectra = None, energy = None, mzto
             if len(res) == 0:
                 continue
             result_i[metabolite] = res
-        results[f] = result_i
+        return result_i
+    
+    
+    print('processing dataset \n')
+    results = dict()
+    if not parallel:
+        for f in files:
+            f = file_dir + '/' + f
+            print('processing ' + f)
+            data = load_data(f, energy)
+            result_i = dict()
+            for i in tqdm(range(len(metab))):
+                metabolite = metab['Metabolite'][i]
+                precursor_mz = metab['Precursor_mz'][i]
+                spectrum = spectra[metabolite]
+                if (spectrum is None) or (len(spectrum) < 1):
+                    continue
+                res = one_sample_one_compound(data, precursor_mz, spectrum, mztol=mztol, peak_threshold=peak_threshold)
+                if len(res) == 0:
+                    continue
+                result_i[metabolite] = res
+            results[f] = result_i
+    else:
+        num_cores = multiprocessing.cpu_count()
+        result_par = Parallel(n_jobs=num_cores, verbose=3)(delayed(process_one_file)(f) for f in files)
+        for i, f in enumerate(files):
+            results[f] = result_par[i]
     return results, spectra
         
 
-def grouping_results(results, rt_tol = 5, n_candidate = 5):
+def grouping_results(results, rt_tol = 5, n_candidate = 1000):
     samples = list(results.keys())
     columns = ['Sample', 'Metabolite','RT', 'Precursor_intensity', 'Fragment_mz', 'Fragment_intensity', 'Score']
     quant_table = []

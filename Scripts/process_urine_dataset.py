@@ -11,25 +11,26 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 from scipy import stats
-
+from rdkit import Chem
+from rdkit.Chem import AllChem
 from DIA.core import process_dataset, grouping_results
 from DIA.iq import create_metabo_list, create_metabo_table
 
 file_dir = 'D:/data/MTBLS816_mzML'
-file_met = 'HMDB/urine_metabolites.csv'
+file_met = 'HMDB/all_metabolites.csv'
 file_spectra = 'HMDB/true_urine_spectra.npy'
 decoy_spectra = 'HMDB/decoy_urine_spectra.npy'
 
 # true results
-results, spectra = process_dataset(file_dir, file_met, file_spectra, energy = 30, peak_threshold=5000)
-results = grouping_results(results)
+results, spectra = process_dataset(file_dir, file_met, file_spectra, parallel=True, energy = 30, peak_threshold=5000)
+results = grouping_results(results, n_candidate=1000)
 quant_list = create_metabo_list(results, median_normalization = False, missing_value_filter = 0.3)
 quant_table = create_metabo_table(quant_list, spectra, 'topN', 5)
 np.save('quant_table.npy', quant_table)
 np.save('quant_list.npy', quant_list)
 
 # decoy results
-decoy, decoyspectra = process_dataset(file_dir, file_met, decoy_spectra, energy = 30, peak_threshold=5000)
+decoy, decoyspectra = process_dataset(file_dir, file_met, decoy_spectra, parallel=True, energy = 30, peak_threshold=5000)
 decoy = grouping_results(decoy)
 decoy_list = create_metabo_list(decoy, median_normalization = False, missing_value_filter = 0.3)
 decoy_table = create_metabo_table(decoy_list, decoyspectra, 'topN', 5)
@@ -57,20 +58,30 @@ plt.ylabel('peak groups')
 plt.legend()
 
 quant_mat = quant_table[0]
-sel = np.where(pvals < 0.05)[0]
-sel_mat = quant_mat.iloc[sel,:]
-sel_scores = true_scores[sel]
+sel1 = np.where(pvals < 0.05)[0]
+sel_mat1 = quant_mat.iloc[sel1,:]
+sel2 = np.where( np.logical_and(pvals < 0.1, pvals > 0.05) )[0]
+sel_mat2 = quant_mat.iloc[sel2,:]
+sel3 = np.where( np.logical_and(pvals < 0.15, pvals > 0.1) )[0]
+sel_mat3 = quant_mat.iloc[sel3,:]
 
-metabs = np.unique([i.split('_')[0] for i in sel_mat.index])
-
-
-quant_rsd = []
-for i in range(len(sel_scores)):
-    x = sel_mat.iloc[i,:].values
-    quant_rsd.append(np.nanstd(x) / np.nanmean(x))
+quant_rsd1 = []
+for i in range(len(sel1)):
+    x = sel_mat1.iloc[i,:].values
+    quant_rsd1.append(np.nanstd(x) / np.nanmean(x))
+quant_rsd2 = []
+for i in range(len(sel2)):
+    x = sel_mat2.iloc[i,:].values
+    quant_rsd2.append(np.nanstd(x) / np.nanmean(x))
+quant_rsd3 = []
+for i in range(len(sel3)):
+    x = sel_mat3.iloc[i,:].values
+    quant_rsd3.append(np.nanstd(x) / np.nanmean(x))
     
 plt.figure(dpi = 300)
-plt.hist(quant_rsd, bins = 50, color='red', alpha=0.7, label = 'urine')
+plt.hist(quant_rsd1, bins = 50, color='red', alpha=0.5, label = 'p-val < 0.05')
+plt.hist(quant_rsd2, bins = 50, color='navy', alpha=0.5, label = '0.05 < p-val < 0.10')
+plt.hist(quant_rsd3, bins = 50, color='lightgreen', alpha=0.5, label = '0.10 < p-val < 0.15')
 plt.xlabel('RSD')
 plt.ylabel('peak groups')
 plt.legend()
