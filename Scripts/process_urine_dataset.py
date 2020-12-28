@@ -85,4 +85,17 @@ plt.hist(quant_rsd3, bins = 50, color='lightgreen', alpha=0.5, label = '0.10 < p
 plt.xlabel('RSD')
 plt.ylabel('peak groups')
 plt.legend()
+plt.show()
+
+corr_metab = pd.read_csv('Data/CorrDec.csv')
+metab = pd.read_csv('HMDB/all_metabolites.csv')
+metab_name = [i.split('_')[0] for i in quant_list.keys()]
+metab_name = np.unique(metab_name)
+common = []
+for n in metab_name:
+    s = np.where(metab['Metabolite'] == n)[0][0]
+    smi = metab['SMILES'][s]
+    
+    if n in list(corr_metab['name']):
+        common += [smi]
 
