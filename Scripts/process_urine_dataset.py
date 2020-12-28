@@ -23,15 +23,15 @@ file_spectra = 'HMDB/true_urine_spectra.npy'
 decoy_spectra = 'HMDB/decoy_urine_spectra.npy'
 
 # true results
-results, spectra = process_dataset(file_dir, file_met, file_spectra, energy = 30, peak_threshold=5000)
-results = grouping_results(results)
+results, spectra = process_dataset(file_dir, file_met, file_spectra, parallel=True, energy = 30, peak_threshold=5000)
+results = grouping_results(results, n_candidate=1000)
 quant_list = create_metabo_list(results, median_normalization = False, missing_value_filter = 0.3)
 quant_table = create_metabo_table(quant_list, spectra, 'topN', 5)
 np.save('quant_table.npy', quant_table)
 np.save('quant_list.npy', quant_list)
 
 # decoy results
-decoy, decoyspectra = process_dataset(file_dir, file_met, decoy_spectra, energy = 30, peak_threshold=5000)
+decoy, decoyspectra = process_dataset(file_dir, file_met, decoy_spectra, parallel=True, energy = 30, peak_threshold=5000)
 decoy = grouping_results(decoy)
 decoy_list = create_metabo_list(decoy, median_normalization = False, missing_value_filter = 0.3)
 decoy_table = create_metabo_table(decoy_list, decoyspectra, 'topN', 5)
