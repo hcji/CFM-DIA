@@ -106,7 +106,7 @@ def process_dataset(file_dir, file_met, file_spectra = None, energy = None, mzto
     return results, spectra
         
 
-def grouping_results(results, rt_tol = 5, n_candidate = 5):
+def grouping_results(results, rt_tol = 5, n_candidate = 1000):
     samples = list(results.keys())
     columns = ['Sample', 'Metabolite','RT', 'Precursor_intensity', 'Fragment_mz', 'Fragment_intensity', 'Score']
     quant_table = []

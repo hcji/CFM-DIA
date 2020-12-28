@@ -40,6 +40,7 @@ def create_metabo_list(quant_table, median_normalization = True, missing_value_f
     p_list = {}
     for prot, sub in tqdm(preprocessed_data.groupby('Metabolite_Group')):
         score = np.nansum(sub['Precursor_intensity'] * sub['Score']) / np.nansum(sub['Precursor_intensity'])
+        rt = np.nansum(sub['Precursor_intensity'] * sub['RT']) / np.nansum(sub['Precursor_intensity'])
         idx = np.unique(list(sub['Fragment_mz']) + [-1])
         m = pd.DataFrame(np.full((len(idx), len(samples)), np.nan))
         m.index = idx
@@ -63,7 +64,8 @@ def create_metabo_list(quant_table, median_normalization = True, missing_value_f
         if missR > missing_value_filter:
             continue
         else:
-            p_list[prot] = dict({'quant_list': m, 'score': score})
+            prot += '_' + str(round(rt, 2))
+            p_list[prot] = dict({'quant_list': m, 'rt': rt, 'score': score})
     return p_list
 
 

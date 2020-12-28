@@ -9,14 +9,16 @@ import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib_venn import venn2
 from tqdm import tqdm
 from scipy import stats
-
+from rdkit import Chem
+from rdkit.Chem import AllChem
 from DIA.core import process_dataset, grouping_results
 from DIA.iq import create_metabo_list, create_metabo_table
 
 file_dir = 'D:/data/MTBLS816_mzML'
-file_met = 'HMDB/urine_metabolites.csv'
+file_met = 'HMDB/all_metabolites.csv'
 file_spectra = 'HMDB/true_urine_spectra.npy'
 decoy_spectra = 'HMDB/decoy_urine_spectra.npy'
 
@@ -52,26 +54,55 @@ plt.figure(dpi = 300)
 plt.hist(true_scores, bins = 50, color='coral', alpha=0.7, label = 'urine')
 plt.hist(decoy_scores, bins = 50, color='navy', alpha=0.7, label = 'decoy')
 plt.plot([0.718, 0.718], [0, 200], color='red', label='p-val = 0.05')
-plt.xlabel('p-values')
+plt.xlabel('MCI scores')
 plt.ylabel('peak groups')
 plt.legend()
+plt.show()
 
 quant_mat = quant_table[0]
-sel = np.where(pvals < 0.05)[0]
-sel_mat = quant_mat.iloc[sel,:]
-sel_scores = true_scores[sel]
+sel1 = np.where(pvals < 0.05)[0]
+sel_mat1 = quant_mat.iloc[sel1,:]
+sel2 = np.where( np.logical_and(pvals < 0.1, pvals > 0.05) )[0]
+sel_mat2 = quant_mat.iloc[sel2,:]
+sel3 = np.where( np.logical_and(pvals < 0.15, pvals > 0.1) )[0]
+sel_mat3 = quant_mat.iloc[sel3,:]
 
-metabs = np.unique([i.split('_')[0] for i in sel_mat.index])
-
-
-quant_rsd = []
-for i in range(len(sel_scores)):
-    x = sel_mat.iloc[i,:].values
-    quant_rsd.append(np.nanstd(x) / np.nanmean(x))
+quant_rsd1 = []
+for i in range(len(sel1)):
+    x = sel_mat1.iloc[i,:].values
+    quant_rsd1.append(np.nanstd(x) / np.nanmean(x))
+quant_rsd2 = []
+for i in range(len(sel2)):
+    x = sel_mat2.iloc[i,:].values
+    quant_rsd2.append(np.nanstd(x) / np.nanmean(x))
+quant_rsd3 = []
+for i in range(len(sel3)):
+    x = sel_mat3.iloc[i,:].values
+    quant_rsd3.append(np.nanstd(x) / np.nanmean(x))
     
 plt.figure(dpi = 300)
-plt.hist(quant_rsd, bins = 50, color='red', alpha=0.7, label = 'urine')
+plt.hist(quant_rsd1, bins = 50, color='red', alpha=0.5, label = 'p-val < 0.05')
+plt.hist(quant_rsd2, bins = 50, color='navy', alpha=0.5, label = '0.05 < p-val < 0.10')
+plt.hist(quant_rsd3, bins = 50, color='lightgreen', alpha=0.5, label = '0.10 < p-val < 0.15')
 plt.xlabel('RSD')
 plt.ylabel('peak groups')
 plt.legend()
+plt.show()
+
+
+corr_metab = pd.read_csv('Data/CorrDec.csv')
+metab = pd.read_csv('HMDB/all_metabolites.csv')
+metab_name = [i.split('_')[0] for i in metab['Metabolite']]
+metab_name = np.unique(metab_name)
+common = []
+for n in metab_name:
+    s = np.where(metab['Metabolite'] == n)[0][0]
+    smi = metab['SMILES'][s]
+    
+    if smi in list(corr_metab['smiles']):
+        common += [smi]
+        continue
+    
+    if n in list(corr_metab['name']):
+        common += [smi]
 
