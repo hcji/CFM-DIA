@@ -103,11 +103,11 @@ for i in tqdm(range(len(all_spectra))):
         new_metab.loc[len(new_metab)] = all_metab.loc[i, :]
     
     if np.isnan(precursor_mz):
-        true_spectra[metabolite] = all_spectra[i]['high_energy']
+        true_spectra[metabolite] = all_spectra[i]['medium_energy']
         decoy_spectra[metabolite] = None
     else:
         decoy_spectrum = get_decoy_spectrum(precursor_mz, all_spectra[i]['high_energy'])
-        true_spectra[metabolite] = all_spectra[i]['high_energy']
+        true_spectra[metabolite] = all_spectra[i]['medium_energy']
         decoy_spectra[metabolite] = decoy_spectrum
         
 np.save('HMDB/true_urine_spectra.npy', true_spectra)

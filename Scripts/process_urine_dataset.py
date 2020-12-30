@@ -24,7 +24,7 @@ decoy_spectra = 'HMDB/decoy_urine_spectra.npy'
 
 # true results
 results, spectra = process_dataset(file_dir, file_met, file_spectra, parallel=True, energy = 30, peak_threshold=5000)
-results = grouping_results(results, n_candidate=1000)
+results1 = grouping_results(results, n_candidate=1000, rt_tol = 5)
 quant_list = create_metabo_list(results, median_normalization = False, missing_value_filter = 0.3)
 quant_table = create_metabo_table(quant_list, spectra, 'topN', 5)
 np.save('quant_table.npy', quant_table)
@@ -32,7 +32,7 @@ np.save('quant_list.npy', quant_list)
 
 # decoy results
 decoy, decoyspectra = process_dataset(file_dir, file_met, decoy_spectra, parallel=True, energy = 30, peak_threshold=5000)
-decoy = grouping_results(decoy)
+decoy = grouping_results(decoy, n_candidate=1000)
 decoy_list = create_metabo_list(decoy, median_normalization = False, missing_value_filter = 0.3)
 decoy_table = create_metabo_table(decoy_list, decoyspectra, 'topN', 5)
 np.save('decoy_table.npy', decoy_table)
@@ -49,18 +49,19 @@ decoy_scores = np.array(decoy_table[1])
 decoy_scores[np.isnan(decoy_scores)] = 0
 
 pvals = stats.t.sf((true_scores - np.mean(decoy_scores)) / np.std(decoy_scores), len(decoy_scores)-1)
+thres = true_scores[np.argmin(np.abs(pvals - 0.05))]
 
 plt.figure(dpi = 300)
 plt.hist(true_scores, bins = 50, color='coral', alpha=0.7, label = 'urine')
 plt.hist(decoy_scores, bins = 50, color='navy', alpha=0.7, label = 'decoy')
-plt.plot([0.718, 0.718], [0, 200], color='red', label='p-val = 0.05')
+plt.plot([thres, thres], [0, 100], color='red', label='p-val = 0.05')
 plt.xlabel('MCI scores')
 plt.ylabel('peak groups')
 plt.legend()
 plt.show()
 
 quant_mat = quant_table[0]
-sel1 = np.where(pvals < 0.05)[0]
+sel1 = np.where(pvals < 0.2)[0]
 sel_mat1 = quant_mat.iloc[sel1,:]
 sel2 = np.where( np.logical_and(pvals < 0.1, pvals > 0.05) )[0]
 sel_mat2 = quant_mat.iloc[sel2,:]
@@ -90,19 +91,19 @@ plt.legend()
 plt.show()
 
 
-corr_metab = pd.read_csv('Data/CorrDec.csv')
-metab = pd.read_csv('HMDB/all_metabolites.csv')
-metab_name = [i.split('_')[0] for i in metab['Metabolite']]
-metab_name = np.unique(metab_name)
+corr_metab = pd.read_csv('Data/corrdec/CorrDec.csv')
 common = []
-for n in metab_name:
-    s = np.where(metab['Metabolite'] == n)[0][0]
-    smi = metab['SMILES'][s]
-    
-    if smi in list(corr_metab['smiles']):
-        common += [smi]
+for i in sel_mat1.index:
+    n = i.split('_')[0]
+    rt = float(i.split('_')[-1])
+    wh = np.where(corr_metab['Metabolite'] == n)[0]
+    if len(wh) == 0:
         continue
-    
-    if n in list(corr_metab['name']):
-        common += [smi]
+    else:
+        wh = wh[0]
+        rt1 = corr_metab['Rt'][wh]
+        if abs(rt - rt1) < 20:
+            if n not in common:
+                common.append(n)
+len(np.unique(common))
 

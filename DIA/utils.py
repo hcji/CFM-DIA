@@ -12,6 +12,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from bisect import bisect_left, bisect_right
 from scipy.signal import find_peaks, savgol_filter
+from DIA.peak_eval import PeakEval
 
 def load_data(mzml, select_energy=None):
     exp = pyopenms.MSExperiment()
@@ -143,25 +144,30 @@ def get_ms2(data, pmz, exrt):
     return np.array([peaks[wh]['mz'], peaks[wh]['intensity']]).T
 
 
-def get_peaks(eic, width=5, distance=5, peak_threshold=None):
+def get_peaks(eic, width=5, distance=5, peak_threshold=None, gaussian_score=0.7):
     x = eic[0]
     y = eic[1]
+    z = np.array([x, y]).T
     if peak_threshold == None:
         threshold = np.percentile(y, 0.95)
     else:
         threshold = max(np.percentile(y, 0.95), peak_threshold)
     pks = find_peaks(y, width=width, distance=distance)
     keep = np.where(y[pks[0]] > threshold)[0]
-    center, left, right = [], [], []
+    center, left, right, score = [], [], [], []
     for k in keep:
         ind = pks[0][k]
         w = pks[1]['widths'][k]
         l = max(0, ind - 2 * int(w))
         r = min(len(x)-1, ind + 2 * int(w))
+        gs = PeakEval(z, x[l], x[r]).GaussianSimilarity()
+        if gs < gaussian_score:
+            continue
         center.append(x[ind])
         left.append(x[l])
         right.append(x[r])
-    return center, (left, right)
+        score.append(gs)
+    return center, (left, right, score)
 
 
 def get_decoy_spectrum(pmz, spectrum):

@@ -15,10 +15,11 @@ from scipy.stats import pearsonr
 from tqdm import tqdm
 from PyCFMID.PyCFMID import cfm_predict
 from DIA.utils import load_data, get_precursor_eic, get_fragment_eic, get_peaks, get_decoy_spectrum
+from DIA.compare import dot_similarty
 
-def one_sample_one_compound(data, precursor_mz, spectrum, mztol=0.1, peak_threshold=1000):
+def one_sample_one_compound(data, precursor_mz, spectrum, mztol=0.1, peak_threshold=1000, gaussian_score=0.7):
     precursor_eic = get_precursor_eic(data, precursor_mz, 0, mztol = 0.1, width = float('inf'))
-    precursor_peaks, peaks_information = get_peaks(precursor_eic, peak_threshold=peak_threshold)
+    precursor_peaks, peaks_information = get_peaks(precursor_eic, peak_threshold=peak_threshold, gaussian_score=gaussian_score)
     
     fragment_mzs = spectrum['mz']
     precursor_rt, precursor_eic = precursor_eic[0], precursor_eic[1]
@@ -52,11 +53,14 @@ def one_sample_one_compound(data, precursor_mz, spectrum, mztol=0.1, peak_thresh
         ax2.legend()
         plt.show()
         '''
-        qv = np.array(fragment_intensity)
         wt = np.array(fragment_correlation)
+        qv = np.array(fragment_intensity)
         rv = np.array(spectrum)[:,1]
+        qv /= np.max(qv)
+        rv /= np.max(rv)
+        # mv = np.sqrt(qv * rv)
         dot_score = np.dot(qv, rv) / np.sqrt( np.dot(qv, qv) * np.dot(rv, rv) )
-        cor_score = np.nansum(qv * wt) / np.nansum(qv)
+        cor_score = np.nansum(rv * wt) / np.nansum(rv)
         tot_score = 0.5 * (dot_score + cor_score)
         output[rt] = dict({'precursor_intensity':precursor_intensity, 'total_score': tot_score, 'ms2': np.array([spectrum.iloc[:,0], qv]).T})
     return output
