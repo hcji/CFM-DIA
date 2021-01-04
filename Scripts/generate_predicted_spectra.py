@@ -45,7 +45,7 @@ hmdb_metab = pd.DataFrame({'ID': hmdb, 'Metabolite': metab, 'Adduct': '[M+H]+', 
 spectra = []
 for smi in tqdm(smiles):
     try:
-        spectrum = cfm_predict(smi, prob_thresh=0.01, param_file='', config_file='', annotate_fragments=False, output_file=None, apply_postproc=True, suppress_exceptions=False)
+        spectrum = cfm_predict(smi, param_file='', config_file='', annotate_fragments=False, output_file=None, apply_postproc=True, suppress_exceptions=False)
     except:
         spectrum = None
     spectra.append(spectrum)
@@ -64,7 +64,7 @@ for i in tqdm(range(len(corrdec_met))):
         continue
         
     try:
-        spectrum = cfm_predict(smi, prob_thresh=0.01, param_file='', config_file='', annotate_fragments=False, output_file=None, apply_postproc=True, suppress_exceptions=False)
+        spectrum = cfm_predict(smi, param_file='', config_file='', annotate_fragments=False, output_file=None, apply_postproc=True, suppress_exceptions=False)
     except:
         spectrum = None
     

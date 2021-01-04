@@ -62,7 +62,7 @@ def one_sample_one_compound(data, precursor_mz, spectrum, mztol=0.1, peak_thresh
         dot_score = np.dot(qv, rv) / np.sqrt( np.dot(qv, qv) * np.dot(rv, rv) )
         cor_score = np.nansum(rv * wt) / np.nansum(rv)
         tot_score = 0.5 * (dot_score + cor_score)
-        output[rt] = dict({'precursor_intensity':precursor_intensity, 'total_score': tot_score, 'ms2': np.array([spectrum.iloc[:,0], qv]).T})
+        output[rt] = dict({'precursor_intensity':precursor_intensity, 'total_score': tot_score, 'ms2': np.array([spectrum.iloc[:,0], fragment_intensity]).T})
     return output
 
 
