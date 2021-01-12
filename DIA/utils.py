@@ -139,7 +139,7 @@ def get_ms2(data, pmz, exrt):
         wh = np.argmin(np.abs(swath[:,0] - pmz))
         
     peaks = data[list(data.keys())[wh]]
-    rts = [float(p['rt']) for p in peaks]
+    rts = np.array([float(p['rt']) for p in peaks])
     wh = np.argmin(np.abs(rts - exrt))
     return np.array([peaks[wh]['mz'], peaks[wh]['intensity']]).T
 

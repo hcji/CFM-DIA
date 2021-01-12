@@ -53,9 +53,9 @@ np.save('HMDB/urine_spectra.npy', spectra)
 
 corr_spectra = []
 corr_index, corr_metab, corr_smiles, corr_precursors = [], [], [], []
-corrdec_met = pd.read_csv('Data/CorrDec.csv')
+corrdec_met = pd.read_csv('Data/corrdec/CorrDec.csv')
 for i in tqdm(range(len(corrdec_met))):
-    smi = corrdec_met['smiles'][i]
+    smi = corrdec_met['SMILES'][i]
     try:
         m = Chem.MolFromSmiles(smi)
         smi = Chem.MolToSmiles(m, isomericSmiles=False)
@@ -68,7 +68,7 @@ for i in tqdm(range(len(corrdec_met))):
     except:
         spectrum = None
     
-    name = corrdec_met['name'][i]
+    name = corrdec_met['Metabolite'][i]
     precursor = Formula(f).isotope.mass + 1.0078
     index = 'CorrDec_{}'.format(i)
     

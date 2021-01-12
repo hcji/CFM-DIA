@@ -83,7 +83,7 @@ def process_dataset(file_dir, file_met, file_spectra = None, energy = None, mzto
         spectra = dict()
         for i, smi in enumerate(tqdm(metab['SMILES'])):
             precursor_mz = metab['Precursor_mz'][i]
-            spectrum = cfm_predict(smi, prob_thresh=0.01, param_file='', config_file='', annotate_fragments=False, output_file=None, apply_postproc=True, suppress_exceptions=False)
+            spectrum = cfm_predict(smi, prob_thresh=0.001, param_file='', config_file='', annotate_fragments=False, output_file=None, apply_postproc=True, suppress_exceptions=False)
             spectrum = spectrum[level]
             if use_decoy:
                 spectrum = get_decoy_spectrum(precursor_mz, spectrum)
