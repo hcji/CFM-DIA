@@ -15,5 +15,8 @@ metabolite feature extraction and controlling the false discovery rate. Furtherm
 
 ### Usage:
 
-1. 
+See the jupyter notebook file *Example.ipynb*
 
+### Contact
+
+ji.hongchao@foxmail.com
