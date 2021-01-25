@@ -106,7 +106,7 @@ for i in tqdm(range(len(all_spectra))):
         true_spectra[metabolite] = all_spectra[i]['medium_energy']
         decoy_spectra[metabolite] = None
     else:
-        decoy_spectrum = get_decoy_spectrum(precursor_mz, all_spectra[i]['high_energy'])
+        decoy_spectrum = get_decoy_spectrum(precursor_mz, all_spectra[i]['medium_energy'])
         true_spectra[metabolite] = all_spectra[i]['medium_energy']
         decoy_spectra[metabolite] = decoy_spectrum
         
