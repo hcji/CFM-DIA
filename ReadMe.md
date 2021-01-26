@@ -3,6 +3,9 @@
 CFM-DIA is a DIA-MS workflow for targeted metabolite extraction. CFM-DIA includes predicted and decoy spectra generation for 
 metabolite feature extraction and controlling the false discovery rate. Furthermore, CFM-DIA quantify metabolites via multiple methods.
 
+<div align="center">
+<img src="https://github.com/hcji/CFM-DIA/blob/master/Img/figure.tif" width=600 height=450 />
+</div>
 
 ### Depends:
 
